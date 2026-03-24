@@ -1,5 +1,12 @@
 const API_BASE = import.meta.env.VITE_API_URL;
 
+export function getFileUrl(path) {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://"))return path;
+  if(path.startsWith("/")) return `${API_BASE}${path}`;
+  return `${API_ABASE}/uploads/${path}`;
+}
+
 export function getToken() {
   return localStorage.getItem("token");
 }

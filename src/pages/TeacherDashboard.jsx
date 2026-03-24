@@ -20,6 +20,7 @@ import {
   resetStudentPassword,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { API_BASE, getFileUrl } from "../services/api";
 
 const TABS = [
   { key: "profile", label: "โปรไฟล์" },
@@ -482,7 +483,7 @@ setTcasForm(base);
     <div style={{ width: 42, height: 42, borderRadius: 12, overflow: "hidden", border: "1px solid #eee", background: "#f5f5f5", display: "grid", placeItems: "center", flexShrink: 0 }}>
       {s.photoUrl ? (
         <img
-          src={`${API_BASE}${s.photoUrl}`}
+          src={getFileUrl(s.photoUrl)}
           alt={s.firstName}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -1202,7 +1203,7 @@ function ProfileTab({
         <div style={styles.avatar}>
         {student.photoUrl ? (
     <img
-      src={`${API_BASE}:${student.photoUrl}`}
+      src={getFileUrl(student.photpUrl)}
       alt={student.firstName}
       style={styles.avatarImg}
         />
