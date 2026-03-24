@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  studentCode  String?  @unique
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(STUDENT)
+  studentId    String?  @unique
+  student      Student? @relation(fields: [studentId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Student {
+  id          String    @id @default(cuid())
+  studentCode String    @unique
+  firstName   String
+  lastName    String
+  nickname    String?
+  gradeLevel  String?
+  classRoom   String?
+  schoolName  String?
+  birthDate   DateTime?
+  strengths   String?
+  photoUrl    String?
+  address     String?
+  updatedAt   DateTime  @updatedAt
+  extraNote   String?
+  themeColor  String?
+
+  user          User?
+  choices       UniversityChoice[]
+  overviewItems OverviewItem[]
+  achievements  Achievement[]
+  gradeRecords  GradeRecord[]
+  phone         String?
+  parentPhone   String?
+}
+
+model UniversityChoice {
+  id             String  @id @default(cuid())
+  studentId      String
+  rank           Int
+  universityName String
+  facultyName    String?
+  programName    String?
+
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, rank])
+}
+
+model OverviewItem {
+  id              String   @id @default(cuid())
+  studentId       String
+  choiceRank      Int
+  requirementType String? // เช่น TCAS1
+  requirementText String // ข้อเรียกร้อง
+  hasIt           Boolean  @default(false)
+  note            String?
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, choiceRank])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  studentId   String
+  category    String // เช่น วิชาการ, กีฬา, ศิลปะ, อื่น ๆ
+  title       String // ชื่อรายการผลงาน
+  description String? // รายละเอียดเพิ่มเติม
+  hasEvidence Boolean  @default(false)
+  evidenceUrl String? // ลิงก์ drive / รูป / เอกสาร
+  note        String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, category])
+}
+
+model GradeRecord {
+  id           String   @id @default(cuid())
+  studentId    String
+  academicYear String
+  term         String
+  subject      String
+  grade        String
+  note         String?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, academicYear, term])
+}
