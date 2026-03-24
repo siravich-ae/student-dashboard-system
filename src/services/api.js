@@ -129,7 +129,7 @@ export async function uploadStudentPhoto(studentId, file) {
   const formData = new FormData();
   formData.append("photo", file);
 
-  const res = await fetch(`http://localhost:4000/students/${studentId}/photo`, {
+  const res = await fetch(`${API_BASE}/students/${studentId}/photo`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,

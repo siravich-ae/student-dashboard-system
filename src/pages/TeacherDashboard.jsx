@@ -482,7 +482,7 @@ setTcasForm(base);
     <div style={{ width: 42, height: 42, borderRadius: 12, overflow: "hidden", border: "1px solid #eee", background: "#f5f5f5", display: "grid", placeItems: "center", flexShrink: 0 }}>
       {s.photoUrl ? (
         <img
-          src={`http://localhost:4000${s.photoUrl}`}
+          src={`${API_BASE}${s.photoUrl}`}
           alt={s.firstName}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -1202,7 +1202,7 @@ function ProfileTab({
         <div style={styles.avatar}>
         {student.photoUrl ? (
     <img
-      src={`http://localhost:4000${student.photoUrl}`}
+      src={`${API_BASE}:${student.photoUrl}`}
       alt={student.firstName}
       style={styles.avatarImg}
         />
