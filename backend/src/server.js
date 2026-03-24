@@ -42,7 +42,7 @@ const storage = multer.diskStorage({
   credentials: true,
 }));
   app.use(express.json());
-  app.use("/uploads", express.static(uploadsDir));
+  app.use("/uploads", express.static("uploads"));
 
 // health
   app.get("/health", (req, res) => res.json({ ok: true }));

@@ -1,12 +1,17 @@
-const API_BASE = import.meta.env.VITE_API_URL;
+export const API_BASE =
+  import.meta.env.VITE_API_URL || "http://localhost:4000";
 
 export function getFileUrl(path) {
   if (!path) return "";
-  if (path.startsWith("http://") || path.startsWith("https://"))return path;
-  if(path.startsWith("/")) return `${API_BASE}${path}`;
-  return `${API_ABASE}/uploads/${path}`;
-}
 
+  if (path.startsWith("http")) return path;
+
+  if (path.startsWith("/")) {
+    return `${API_BASE}${path}`;
+  }
+
+  return `${API_BASE}/uploads/${path}`;
+}
 export function getToken() {
   return localStorage.getItem("token");
 }
