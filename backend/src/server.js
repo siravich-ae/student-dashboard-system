@@ -34,7 +34,13 @@ const storage = multer.diskStorage({
   const upload = multer({ storage });
 
   const app = express();
-  app.use(cors({ origin: "http://localhost:5173" }));
+  app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://student-dashboard-system-two.vercel.app",
+  ],
+  credentials: true,
+}));
   app.use(express.json());
   app.use("/uploads", express.static(uploadsDir));
 
