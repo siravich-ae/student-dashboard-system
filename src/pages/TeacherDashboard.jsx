@@ -20,7 +20,7 @@ import {
   resetStudentPassword,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
-import { API_BASE, getFileUrl } from "../services/api";
+import { getFileUrl } from "../services/api";
 
 const TABS = [
   { key: "profile", label: "โปรไฟล์" },
