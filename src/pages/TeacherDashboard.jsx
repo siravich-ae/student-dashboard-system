@@ -96,6 +96,9 @@ function getOutlineButtonStyle(theme) {
 }
 
 export default function TeacherDashboard() {
+
+  console.log("student:", student);
+  console.log("photoUrl:", student?.photoUrl);
   const navigate = useNavigate();
 
   const [students, setStudents] = useState([]);
