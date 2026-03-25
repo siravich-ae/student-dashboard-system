@@ -485,7 +485,7 @@ setTcasForm(base);
 >
   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
     <div style={{ width: 42, height: 42, borderRadius: 12, overflow: "hidden", border: "1px solid #eee", background: "#f5f5f5", display: "grid", placeItems: "center", flexShrink: 0 }}>
-      {s.photoUrl && (
+      {s?.photoUrl && (
   <img
     src={getFileUrl(s.photoUrl)}
     alt={s.firstName}
@@ -1201,7 +1201,7 @@ function ProfileTab({
     <div>
       <div style={styles.profileTop}>
         <div style={styles.avatar}>
-        {student.photoUrl && (
+        {student?.photoUrl && (
   <img
     src={getFileUrl(student.photoUrl)}
     alt={student.firstName}

@@ -3,13 +3,8 @@ export const API_BASE =
 
 export function getFileUrl(path) {
   if (!path) return "";
-
   if (path.startsWith("http")) return path;
-
-  if (path.startsWith("/")) {
-    return `${API_BASE}${path}`;
-  }
-
+  if (path.startsWith("/")) return `${API_BASE}${path}`;
   return `${API_BASE}/uploads/${path}`;
 }
 export function getToken() {
