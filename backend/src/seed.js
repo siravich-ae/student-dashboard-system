@@ -1,45 +1,42 @@
 import bcrypt from "bcrypt";
 import prisma from "./prisma.js";
 
-async function main() {
-  const existingAdmin = await prisma.user.findFirst({
-    where: { role: "ADMIN" },
+async function createUserIfNotExists(username, password, role) {
+  const existing = await prisma.user.findUnique({
+    where: { username },
   });
 
-  if (!existingAdmin) {
-    const adminPasswordHash = await bcrypt.hash("admin123", 10);
-
-    await prisma.user.create({
-      data: {
-        username: "admin",
-        passwordHash: adminPasswordHash,
-        role: "ADMIN",
-      },
-    });
-
-    console.log("Admin created! username=admin password=admin123");
-  } else {
-    console.log("Admin already exists:", existingAdmin.username);
+  if (existing) {
+    console.log(`${role} already exists: ${username}`);
+    return;
   }
 
-  const existingTeacher = await prisma.user.findFirst({
-    where: { role: "TEACHER" },
+  const passwordHash = await bcrypt.hash(password, 10);
+
+  await prisma.user.create({
+    data: {
+      username,
+      passwordHash,
+      role,
+    },
   });
 
-  if (!existingTeacher) {
-    const teacherPasswordHash = await bcrypt.hash("teacher123", 10);
+  console.log(`${role} created! username=${username} password=${password}`);
+}
 
-    await prisma.user.create({
-      data: {
-        username: "teacher",
-        passwordHash: teacherPasswordHash,
-        role: "TEACHER",
-      },
-    });
+async function main() {
+  // ✅ Admin
+  await createUserIfNotExists("admin", "admin123", "ADMIN");
 
-    console.log("Teacher created! username=teacher password=teacher123");
-  } else {
-    console.log("Teacher already exists:", existingTeacher.username);
+  // ✅ Teachers (เพิ่มได้หลายคน)
+  const teachers = [
+    { username: "teacher", password: "teacher123" },
+    { username: "kaimook", password: "23022540km" },
+    { username: "teacher2", password: "1234" },
+  ];
+
+  for (const t of teachers) {
+    await createUserIfNotExists(t.username, t.password, "TEACHER");
   }
 }
 
