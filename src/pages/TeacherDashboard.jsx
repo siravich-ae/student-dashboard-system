@@ -1203,7 +1203,7 @@ function ProfileTab({
         <div style={styles.avatar}>
         {student.photoUrl ? (
     <img
-      src={getFileUrl(student.photpUrl)}
+      src={getFileUrl(student.photoUrl)}
       alt={student.firstName}
       style={styles.avatarImg}
         />
