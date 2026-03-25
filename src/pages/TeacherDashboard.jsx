@@ -97,8 +97,6 @@ function getOutlineButtonStyle(theme) {
 
 export default function TeacherDashboard() {
 
-  console.log("student:", student);
-  console.log("photoUrl:", student?.photoUrl);
   const navigate = useNavigate();
 
   const [students, setStudents] = useState([]);
@@ -153,6 +151,9 @@ export default function TeacherDashboard() {
   parentPhone: "",
   themeColor: "#f8ddea",
 });
+
+  console.log("student:", student);
+  console.log("photoUrl:", student?.photoUrl);
 
   useEffect(() => {
   function handleResize() {
