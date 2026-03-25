@@ -19,7 +19,6 @@ const uploadsDir = path.join(__dirname, "..", "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use("/uploads", express.static("uploads"));
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -42,6 +41,8 @@ const storage = multer.diskStorage({
   ],
   credentials: true,
 }));
+
+app.use("/uploads", express.static("uploads"));
   app.use(express.json());
 // health
   app.get("/health", (req, res) => res.json({ ok: true }));
