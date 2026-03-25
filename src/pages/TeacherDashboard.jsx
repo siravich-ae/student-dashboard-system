@@ -481,17 +481,13 @@ setTcasForm(base);
 >
   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
     <div style={{ width: 42, height: 42, borderRadius: 12, overflow: "hidden", border: "1px solid #eee", background: "#f5f5f5", display: "grid", placeItems: "center", flexShrink: 0 }}>
-      {s.photoUrl ? (
-        <img
-          src={getFileUrl(s.photoUrl)}
-          alt={s.firstName}
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      ) : (
-        <span style={{ fontWeight: 900 }}>
-          {s.firstName?.[0]?.toUpperCase() || "?"}
-        </span>
-      )}
+      {s.photoUrl && (
+  <img
+    src={getFileUrl(s.photoUrl)}
+    alt={s.firstName}
+    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+  />
+)}
     </div>
 
     <div>
@@ -1201,17 +1197,13 @@ function ProfileTab({
     <div>
       <div style={styles.profileTop}>
         <div style={styles.avatar}>
-        {student.photoUrl ? (
-    <img
-      src={getFileUrl(student.photoUrl)}
-      alt={student.firstName}
-      style={styles.avatarImg}
-        />
-        ) : (
-      <div style={{ fontWeight: 900, fontSize: 22 }}>
-      {student.firstName?.[0]?.toUpperCase() || "?"}
-      </div>
-      )}
+        {student.photoUrl && (
+  <img
+    src={getFileUrl(student.photoUrl)}
+    alt={student.firstName}
+    style={styles.avatarImg}
+  />
+)}
     </div>
 
         <div style={{ flex: 1 }}>
