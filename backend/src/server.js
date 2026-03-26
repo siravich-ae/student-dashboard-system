@@ -223,10 +223,10 @@ app.put(
 
       // Replace ทั้งชุด (ลบของเดิม แล้วสร้างใหม่)
       await prisma.$transaction(async (tx) => {
-        await tx.choice.deleteMany({ where: { studentId: id } });
+        await tx.universityChoice.deleteMany({ where: { studentId: id } });
 
         if (cleaned.length > 0) {
-          await tx.choice.createMany({
+          await tx.universityChoice.createMany({
             data: cleaned.map((c) => ({
               studentId: id,
               rank: c.rank,

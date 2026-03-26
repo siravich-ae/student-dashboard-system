@@ -153,9 +153,6 @@ export default function TeacherDashboard() {
   themeColor: "#f8ddea",
 });
 
-  console.log("student:", student);
-  console.log("photoUrl:", student?.photoUrl);
-
   useEffect(() => {
   function handleResize() {
     setIsTablet(window.innerWidth <= 1024);
