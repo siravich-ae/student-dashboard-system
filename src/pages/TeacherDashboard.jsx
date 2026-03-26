@@ -1316,15 +1316,18 @@ function Top3ChoicesEditor({ student, tcasForm, setTcasForm, onSave, saving, err
     );
   }
 
-  function clearRow(rank) {
-    setTcasForm((prev) =>
-      prev.map((r) =>
-        r.rank === rank
-          ? { ...r, universityName: "", facultyName: "", programName: "" }
-          : r
-      )
-    );
-  }
+  async function clearRow(rank) {
+  const newChoices = tcasForm.map((r) =>
+    r.rank === rank
+      ? { ...r, universityName: "", facultyName: "", programName: "" }
+      : r
+  );
+
+  setTcasForm(newChoices);
+
+  await updateStudentChoices(student.id, newChoices); // 🔥 ยิง API
+  await loadDetail(student.id);
+}
 
   return (
     <div>

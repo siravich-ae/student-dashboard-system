@@ -197,15 +197,18 @@ useEffect(() => {
     );
   }
 
-  function clearChoice(rank) {
-    setChoicesForm((prev) =>
-      prev.map((r) =>
-        r.rank === rank
-          ? { ...r, universityName: "", facultyName: "", programName: "" }
-          : r
-      )
-    );
-  }
+  async function clearChoice(rank) {
+  const newChoices = choicesForm.map((r) =>
+    r.rank === rank
+      ? { ...r, universityName: "", facultyName: "", programName: "" }
+      : r
+  );
+
+  setChoicesForm(newChoices);
+
+  await updateMyStudentChoices(newChoices); // 🔥 ยิง API ทันที
+  await loadMe(); // reload
+}
 
   async function handleSaveProfile(e) {
     e.preventDefault();
