@@ -18,6 +18,7 @@ import {
   deleteGrade,
   updateStudentExtraNote,
   resetStudentPassword,
+  deleteStudent,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { getFileUrl } from "../services/api";
@@ -231,6 +232,29 @@ async function handleResetPassword(e) {
     setResetError(err.message || "Reset password failed");
   } finally {
     setResetLoading(false);
+  }
+}
+
+async function handleDeleteStudent() {
+  if (!student?.id) return;
+
+  const ok = window.confirm(
+    `ต้องการลบบัญชีของ ${student.firstName} ${student.lastName} ใช่ไหม?\n\nข้อมูลทั้งหมดของนักเรียนคนนี้จะถูกลบถาวร`
+  );
+
+  if (!ok) return;
+
+  try {
+    await deleteStudent(student.id);
+
+    alert("ลบบัญชีนักเรียนสำเร็จ");
+
+    setStudent(null);
+    setSelectedId(null);
+
+    await loadStudents();
+  } catch (err) {
+    alert(err.message || "Delete failed");
   }
 }
 
@@ -596,6 +620,7 @@ setTcasForm(base);
               tcasError={tcasError}
               onEditProfile={openEditProfile}
               onResetPassword={openResetPassword}
+              onDeleteStudent={handleDeleteStudent}
               onPhotoChange={handlePhotoChange}
               photoUploading={photoUploading}
               photoError={photoError}
@@ -1189,6 +1214,7 @@ function ProfileTab({
   tcasError,
   onEditProfile,
   onResetPassword,
+  onDeleteStudent,
   onPhotoChange,
   photoUploading,
   photoError,
@@ -1230,6 +1256,10 @@ function ProfileTab({
 
   <button style={styles.outlineBtn} onClick={onResetPassword}>
     รีเซ็ตรหัสผ่าน
+  </button>
+
+  <button style={styles.deleteBtn} onClick={onDeleteStudent}>
+    ลบบัญชีนักเรียน
   </button>
 </div>
       </div>
@@ -2407,5 +2437,14 @@ uploadBtn: {
   cursor: "pointer",
   fontWeight: 800,
   background: "white",
+},
+deleteBtn: {
+  border: "1px solid #e5b6b6",
+  background: "#fff5f5",
+  color: "#b42318",
+  borderRadius: 12,
+  padding: "10px 14px",
+  fontWeight: 700,
+  cursor: "pointer",
 },
 };

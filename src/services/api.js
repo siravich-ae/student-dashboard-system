@@ -236,3 +236,9 @@ export async function changeMyStudentPassword(payload) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function deleteStudent(studentId) {
+  return request(`/students/${studentId}`, {
+    method: "DELETE",
+  });
+}
