@@ -1218,4 +1218,60 @@ app.put(
   }
 );
 
+app.delete(
+  "/students/:id",
+  requireAuth,
+  requireRole("TEACHER"),
+  async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const student = await prisma.student.findUnique({
+        where: { id },
+        include: {
+          user: true,
+        },
+      });
+
+      if (!student) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
+      // ลบข้อมูลลูกทั้งหมดก่อน
+      await prisma.universityChoice.deleteMany({
+        where: { studentId: id },
+      });
+
+      await prisma.overviewItem.deleteMany({
+        where: { studentId: id },
+      });
+
+      await prisma.achievement.deleteMany({
+        where: { studentId: id },
+      });
+
+      await prisma.gradeRecord.deleteMany({
+        where: { studentId: id },
+      });
+
+      // ลบ student
+      await prisma.student.delete({
+        where: { id },
+      });
+
+      // ถ้ามี user ผูกอยู่ ให้ลบ user ด้วย
+      if (student.user?.id) {
+        await prisma.user.delete({
+          where: { id: student.user.id },
+        });
+      }
+
+      res.json({ message: "Student account deleted" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
