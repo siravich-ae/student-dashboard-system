@@ -33,6 +33,7 @@ async function main() {
     { username: "teacher", password: "teacher123" },
     { username: "kaimook", password: "23022540km" },
     { username: "teacher2", password: "1234" },
+    { username: "chato", password: "03092537ct"},
   ];
 
   for (const t of teachers) {
