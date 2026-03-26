@@ -1,7 +1,12 @@
 import bcrypt from "bcrypt";
 import prisma from "./prisma.js";
 
-async function createUserIfNotExists(username, password, role) {
+async function createUserIfNotExists(username, plainPassword, role) {
+  if (!username || !plainPassword || !role) {
+    console.log(`Skip user creation: missing required data for role ${role || "-"}`);
+    return;
+  }
+
   const existing = await prisma.user.findUnique({
     where: { username },
   });
@@ -11,7 +16,7 @@ async function createUserIfNotExists(username, password, role) {
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcrypt.hash(plainPassword, 10);
 
   await prisma.user.create({
     data: {
@@ -21,26 +26,44 @@ async function createUserIfNotExists(username, password, role) {
     },
   });
 
-  console.log(`${role} created! username=${username} password=${password}`);
+  console.log(`${role} created: ${username}`);
 }
 
 async function main() {
-  // ✅ Admin
-  await createUserIfNotExists("admin", "admin123", "ADMIN");
+  await createUserIfNotExists(
+    process.env.SEED_ADMIN_USERNAME || "admin",
+    process.env.SEED_ADMIN_PASSWORD,
+    "ADMIN"
+  );
 
-  // ✅ Teachers (เพิ่มได้หลายคน)
-  const teachers = [
-    { username: "teacher", password: "teacher123" },
-    { username: "kaimook", password: "23022540km" },
-    { username: "teacher2", password: "1234" },
-    { username: "chato", password: "03092537ct"},
-  ];
+  await createUserIfNotExists(
+    process.env.SEED_TEACHER_USERNAME || "teacher",
+    process.env.SEED_TEACHER_PASSWORD,
+    "TEACHER"
+  );
 
-  for (const t of teachers) {
-    await createUserIfNotExists(t.username, t.password, "TEACHER");
-  }
+  await createUserIfNotExists(
+    process.env.SEED_TEACHER2_USERNAME,
+    process.env.SEED_TEACHER2_PASSWORD,
+    "TEACHER"
+  );
+
+  await createUserIfNotExists(
+    process.env.SEED_TEACHER3_USERNAME,
+    process.env.SEED_TEACHER3_PASSWORD,
+    "TEACHER"
+  );
+
+  await createUserIfNotExists(
+    process.env.SEED_TEACHER4_USERNAME,
+    process.env.SEED_TEACHER4_PASSWORD,
+    "TEACHER"
+  );
 }
 
 main()
-  .catch((e) => console.error(e))
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());
