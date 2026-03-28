@@ -1805,7 +1805,7 @@ async function handleSaveEdit(itemId) {
               <th style={styles.overviewTh}>ข้อเรียกร้อง</th>
               <th style={styles.overviewTh}>มีแล้ว</th>
               <th style={styles.overviewTh}>หมายเหตุ</th>
-              <th style={styles.overviewTh}>ลบ</th>
+              <th style={styles.overviewTh}>จัดการ</th>
             </tr>
           </thead>
 
@@ -1818,16 +1818,76 @@ async function handleSaveEdit(itemId) {
               </tr>
             )}
 
-            {items.map((item) => (
-              <OverviewRow
-                key={item.id}
-                item={item}
-                saving={savingId === item.id}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-                onNoteBlur={handleNoteBlur}
-              />
-            ))}
+            {items.map((item) =>
+  editingId === item.id ? (
+    <tr key={item.id}>
+      <td style={styles.overviewTd}>
+        <input
+          style={styles.tableInput}
+          value={editForm.requirementType}
+          onChange={(e) => setEditField("requirementType", e.target.value)}
+          placeholder="เช่น TCAS1"
+        />
+      </td>
+
+      <td style={styles.overviewTd}>
+        <input
+          style={styles.tableInput}
+          value={editForm.requirementText}
+          onChange={(e) => setEditField("requirementText", e.target.value)}
+          placeholder="เช่น การแข่งขันวิชาการระดับประเทศ"
+        />
+      </td>
+
+      <td style={styles.overviewTdCenter}>
+        <input
+          type="checkbox"
+          checked={editForm.hasIt}
+          onChange={(e) => setEditField("hasIt", e.target.checked)}
+        />
+      </td>
+
+      <td style={styles.overviewTd}>
+        <input
+          style={styles.tableInput}
+          value={editForm.note}
+          onChange={(e) => setEditField("note", e.target.value)}
+          placeholder="หมายเหตุ"
+        />
+      </td>
+
+      <td style={styles.overviewTdCenter}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <button
+            style={styles.primaryBtn}
+            onClick={() => handleSaveEdit(item.id)}
+            disabled={savingId === item.id}
+          >
+            {savingId === item.id ? "..." : "บันทึก"}
+          </button>
+
+          <button
+            style={styles.outlineBtn}
+            onClick={cancelEdit}
+            disabled={savingId === item.id}
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </td>
+    </tr>
+  ) : (
+    <OverviewRow
+      key={item.id}
+      item={item}
+      saving={savingId === item.id}
+      onToggle={handleToggle}
+      onDelete={handleDelete}
+      onNoteBlur={handleNoteBlur}
+      onEdit={startEdit}
+    />
+  )
+)}
 
             {adding && (
               <tr>
@@ -1882,7 +1942,7 @@ async function handleSaveEdit(itemId) {
   );
 }
 
-function OverviewRow({ item, saving, onToggle, onDelete, onNoteBlur }) {
+function OverviewRow({ item, saving, onToggle, onDelete, onNoteBlur, onEdit }) {
   const [note, setNote] = useState(item.note || "");
 
   useEffect(() => {
