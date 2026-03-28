@@ -9,8 +9,15 @@ import path from "path";
 import { fileURLToPath } from "url";
 import multer from "multer";
 import fs from "fs";
+import { v2 as cloudinary } from "cloudinary";
 
 dotenv.config();
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -592,7 +599,12 @@ app.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const photoUrl = `/uploads/${req.file.filename}`;
+      // 🔥 อัปโหลดไป Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "student-dashboard",
+      });
+      fs.unlinkSync(req.file.path);
+      const photoUrl = result.secure_url;
 
       const student = await prisma.student.update({
         where: { id },
@@ -616,7 +628,6 @@ app.post(
     }
   }
 );
-
 // ✅ ครูเพิ่มผลงานนักเรียน
 app.post(
   "/students/:id/achievements",
