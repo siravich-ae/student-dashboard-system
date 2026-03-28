@@ -71,6 +71,7 @@ app.use("/uploads", express.static("uploads"));
     userId: user.id,
     role: user.role,
     studentId: user.studentId || null,
+    teacherGroup: user.teacherGroup || null,
   });
 
   res.json({
@@ -85,32 +86,42 @@ app.use("/uploads", express.static("uploads"));
 });
 
 // ✅ ตรวจว่า token ยังใช้ได้ + เป็นใคร
-app.get("/auth/me", requireAuth, async (req, res) => {
-  res.json({ user: req.user });
-});
-
 app.post("/students", requireAuth, requireRole("TEACHER"), async (req, res) => {
   const { studentCode, firstName, lastName, password } = req.body || {};
+  const { teacherGroup } = req.user; // 🔥 ดึงจาก token
 
   if (!studentCode || !firstName || !lastName || !password) {
     return res.status(400).json({ message: "Missing required fields" });
   }
 
+  if (!teacherGroup) {
+    return res.status(400).json({ message: "Teacher group not assigned" });
+  }
+
   try {
-    const exists = await prisma.student.findUnique({ where: { studentCode } });
+    const exists = await prisma.student.findUnique({
+      where: { studentCode },
+    });
+
     if (exists) {
       return res.status(400).json({ message: "Student already exists" });
     }
 
+    // 🔥 สร้าง student + ผูก group
     const student = await prisma.student.create({
-      data: { studentCode, firstName, lastName },
+      data: {
+        studentCode,
+        firstName,
+        lastName,
+        teacherGroup, // 👈 เพิ่มตรงนี้
+      },
     });
 
     const passwordHash = await bcrypt.hash(password, 10);
 
     await prisma.user.create({
       data: {
-        username: studentCode,     // ใช้รหัสนักเรียนเป็น username
+        username: studentCode,
         passwordHash,
         role: "STUDENT",
         studentId: student.id,
@@ -127,18 +138,26 @@ app.post("/students", requireAuth, requireRole("TEACHER"), async (req, res) => {
 // ✅ ครูดูรายชื่อนักเรียน (ค้นหาได้)
 app.get("/students", requireAuth, requireRole("TEACHER"), async (req, res) => {
   const q = (req.query.q || "").toString().trim();
+  const { teacherGroup } = req.user;
+
+  if (!teacherGroup) {
+    return res.status(400).json({ message: "Teacher group not assigned" });
+  }
 
   const students = await prisma.student.findMany({
-    where: q
-      ? {
-          OR: [
-            { studentCode: { contains: q, mode: "insensitive" } },
-            { firstName: { contains: q, mode: "insensitive" } },
-            { lastName: { contains: q, mode: "insensitive" } },
-            { nickname: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where: {
+      teacherGroup,
+      ...(q
+        ? {
+            OR: [
+              { studentCode: { contains: q, mode: "insensitive" } },
+              { firstName: { contains: q, mode: "insensitive" } },
+              { lastName: { contains: q, mode: "insensitive" } },
+              { nickname: { contains: q, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { updatedAt: "desc" },
     select: {
       id: true,
@@ -159,35 +178,39 @@ app.get("/students", requireAuth, requireRole("TEACHER"), async (req, res) => {
 // ✅ ครูดูรายละเอียดนักเรียน 1 คน (ใช้หน้าแท็บ)
 app.get("/students/:id", requireAuth, requireRole("TEACHER"), async (req, res) => {
   const { id } = req.params;
+  const { teacherGroup } = req.user;
 
-  const student = await prisma.student.findUnique({
-  where: { id },
-  include: {
-    choices: { orderBy: { rank: "asc" } },
-    overviewItems: {
-      orderBy: [
-        { choiceRank: "asc" },
-        { sortOrder: "asc" },
-        { createdAt: "asc" },
-      ],
+  const student = await prisma.student.findFirst({
+    where: {
+      id,
+      teacherGroup,
     },
-    achievements: {
-      orderBy: [
-        { category: "asc" },
-        { sortOrder: "asc" },
-        { createdAt: "asc" },
-      ],
+    include: {
+      choices: { orderBy: { rank: "asc" } },
+      overviewItems: {
+        orderBy: [
+          { choiceRank: "asc" },
+          { sortOrder: "asc" },
+          { createdAt: "asc" },
+        ],
+      },
+      achievements: {
+        orderBy: [
+          { category: "asc" },
+          { sortOrder: "asc" },
+          { createdAt: "asc" },
+        ],
+      },
+      gradeRecords: {
+        orderBy: [
+          { academicYear: "desc" },
+          { term: "desc" },
+          { sortOrder: "asc" },
+          { createdAt: "asc" },
+        ],
+      },
     },
-    gradeRecords: {
-    orderBy: [
-    { academicYear: "desc" },
-    { term: "desc" },
-    { sortOrder: "asc" },
-    { createdAt: "asc" },
-      ],
-    },
-  },
-});
+  });
 
   if (!student) {
     return res.status(404).json({ message: "Student not found" });
@@ -211,7 +234,6 @@ app.put(
       return res.status(400).json({ message: "choices must be an array" });
     }
 
-    // รับเฉพาะ rank 1-3 และกรองอันที่ไม่มีชื่อมหาลัย
     const cleaned = choices
       .map((c) => ({
         rank: Number(c.rank),
@@ -224,18 +246,26 @@ app.put(
       );
 
     try {
-      // กัน student ไม่มีจริง
-      const exists = await prisma.student.findUnique({ where: { id } });
-      if (!exists) return res.status(404).json({ message: "Student not found" });
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
+      });
 
-      // Replace ทั้งชุด (ลบของเดิม แล้วสร้างใหม่)
+      if (!existing) {
+        return res.status(404).json({ message: "Student not found" });
+      }
+
       await prisma.$transaction(async (tx) => {
-        await tx.universityChoice.deleteMany({ where: { studentId: id } });
+        await tx.universityChoice.deleteMany({
+          where: { studentId: existing.id },
+        });
 
         if (cleaned.length > 0) {
           await tx.universityChoice.createMany({
             data: cleaned.map((c) => ({
-              studentId: id,
+              studentId: existing.id,
               rank: c.rank,
               universityName: c.universityName,
               facultyName: c.facultyName || null,
@@ -245,9 +275,14 @@ app.put(
         }
       });
 
-      const student = await prisma.student.findUnique({
-        where: { id },
-        include: { choices: { orderBy: { rank: "asc" } } },
+      const student = await prisma.student.findFirst({
+        where: {
+          id: existing.id,
+          teacherGroup: req.user.teacherGroup,
+        },
+        include: {
+          choices: { orderBy: { rank: "asc" } },
+        },
       });
 
       res.json({ message: "Choices updated", student });
@@ -279,8 +314,11 @@ app.put(
     } = req.body || {};
 
     try {
-      const existing = await prisma.student.findUnique({
-        where: { id },
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
       });
 
       if (!existing) {
@@ -288,7 +326,7 @@ app.put(
       }
 
       const student = await prisma.student.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
           nickname: nickname ?? null,
           gradeLevel: gradeLevel ?? null,
@@ -437,12 +475,16 @@ app.put("/me/student/choices", requireAuth, requireRole("STUDENT"), async (req, 
       }
     });
 
-    const student = await prisma.student.findUnique({
-      where: { id: studentId },
-      include: {
-        choices: { orderBy: { rank: "asc" } },
-      },
-    });
+    const student = await prisma.student.findFirst({
+  where: {
+    id,
+    teacherGroup: req.user.teacherGroup,
+  },
+});
+
+if (!student) {
+  return res.status(404).json({ message: "Student not found" });
+}
 
     res.json({ message: "Choices updated", student });
   } catch (e) {
@@ -476,14 +518,20 @@ app.post(
     }
 
     try {
-      const student = await prisma.student.findUnique({ where: { id } });
-      if (!student) {
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
+      });
+
+      if (!existing) {
         return res.status(404).json({ message: "Student not found" });
       }
 
       const item = await prisma.overviewItem.create({
         data: {
-          studentId: id,
+          studentId: existing.id,
           choiceRank: Number(choiceRank),
           requirementType: requirementType?.trim() || null,
           requirementText: requirementText.trim(),
@@ -587,13 +635,11 @@ app.post(
     const { id } = req.params;
 
     try {
-      console.log("req.file =", req.file);
-      console.log("cloud name =", process.env.CLOUDINARY_CLOUD_NAME);
-      console.log("api key exists =", !!process.env.CLOUDINARY_API_KEY);
-      console.log("api secret exists =", !!process.env.CLOUDINARY_API_SECRET);
-
-      const existing = await prisma.student.findUnique({
-        where: { id },
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
       });
 
       if (!existing) {
@@ -604,31 +650,25 @@ app.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // 🔥 ถ้ามีรูปเก่าใน Cloudinary ให้ลบก่อน
       if (existing.photoPublicId) {
         await cloudinary.uploader.destroy(existing.photoPublicId);
       }
 
-      // 🔥 อัปโหลดรูปใหม่ไป Cloudinary
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "student-dashboard",
       });
 
-      // 🔥 ลบไฟล์ temp ใน server
       if (req.file?.path) {
         try {
           fs.unlinkSync(req.file.path);
         } catch {}
       }
 
-      const photoUrl = result.secure_url;
-      const photoPublicId = result.public_id;
-
       const student = await prisma.student.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
-          photoUrl,
-          photoPublicId,
+          photoUrl: result.secure_url,
+          photoPublicId: result.public_id,
         },
         include: {
           choices: { orderBy: { rank: "asc" } },
@@ -658,49 +698,61 @@ app.post(
 );
 // ✅ ครูเพิ่มผลงานนักเรียน
 app.post(
-  "/students/:id/achievements",
+  "/students/:id/grades",
   requireAuth,
   requireRole("TEACHER"),
   async (req, res) => {
     const { id } = req.params;
     const {
-      category,
-      title,
-      description,
-      hasEvidence,
-      evidenceUrl,
+      academicYear,
+      term,
+      subject,
+      grade,
       note,
       sortOrder,
     } = req.body || {};
 
-    if (!category || !category.trim()) {
-      return res.status(400).json({ message: "category is required" });
+    if (!academicYear || !academicYear.trim()) {
+      return res.status(400).json({ message: "academicYear is required" });
     }
 
-    if (!title || !title.trim()) {
-      return res.status(400).json({ message: "title is required" });
+    if (!term || !term.trim()) {
+      return res.status(400).json({ message: "term is required" });
+    }
+
+    if (!subject || !subject.trim()) {
+      return res.status(400).json({ message: "subject is required" });
+    }
+
+    if (!grade || !grade.trim()) {
+      return res.status(400).json({ message: "grade is required" });
     }
 
     try {
-      const student = await prisma.student.findUnique({ where: { id } });
-      if (!student) {
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
+      });
+
+      if (!existing) {
         return res.status(404).json({ message: "Student not found" });
       }
 
-      const achievement = await prisma.achievement.create({
+      const gradeRecord = await prisma.gradeRecord.create({
         data: {
-          studentId: id,
-          category: category.trim(),
-          title: title.trim(),
-          description: description?.trim() || null,
-          hasEvidence: Boolean(hasEvidence),
-          evidenceUrl: evidenceUrl?.trim() || null,
+          studentId: existing.id,
+          academicYear: academicYear.trim(),
+          term: term.trim(),
+          subject: subject.trim(),
+          grade: grade.trim(),
           note: note?.trim() || null,
           sortOrder: Number(sortOrder || 0),
         },
       });
 
-      res.json({ message: "Achievement created", achievement });
+      res.json({ message: "Grade created", gradeRecord });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Server error" });
@@ -821,14 +873,20 @@ app.post(
     }
 
     try {
-      const student = await prisma.student.findUnique({ where: { id } });
-      if (!student) {
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
+      });
+
+      if (!existing) {
         return res.status(404).json({ message: "Student not found" });
       }
 
       const gradeRecord = await prisma.gradeRecord.create({
         data: {
-          studentId: id,
+          studentId: existing.id,
           academicYear: academicYear.trim(),
           term: term.trim(),
           subject: subject.trim(),
@@ -843,8 +901,6 @@ app.post(
       console.error(e);
       res.status(500).json({ message: "Server error" });
     }
-
-    
   }
 );
 
@@ -933,8 +989,11 @@ app.put(
     const { extraNote } = req.body || {};
 
     try {
-      const existing = await prisma.student.findUnique({
-        where: { id },
+      const existing = await prisma.student.findFirst({
+        where: {
+          id,
+          teacherGroup: req.user.teacherGroup,
+        },
       });
 
       if (!existing) {
@@ -942,7 +1001,7 @@ app.put(
       }
 
       const student = await prisma.student.update({
-        where: { id },
+        where: { id: existing.id },
         data: {
           extraNote: extraNote?.trim() || null,
         },
@@ -987,10 +1046,12 @@ app.post(
   requireAuth,
   requireRole("ADMIN"),
   async (req, res) => {
-    const { username, password } = req.body || {};
+    const { username, password, teacherGroup } = req.body || {};
 
-    if (!username || !password) {
-      return res.status(400).json({ message: "username and password are required" });
+    if (!username || !password || !teacherGroup) {
+      return res.status(400).json({
+        message: "username, password and teacherGroup are required",
+      });
     }
 
     try {
@@ -1009,6 +1070,7 @@ app.post(
           username: username.trim(),
           passwordHash,
           role: "TEACHER",
+          teacherGroup: teacherGroup.trim(),
         },
       });
 
@@ -1018,6 +1080,7 @@ app.post(
           id: user.id,
           username: user.username,
           role: user.role,
+          teacherGroup: user.teacherGroup,
         },
       });
     } catch (e) {
@@ -1171,12 +1234,15 @@ app.put(
     }
 
     try {
-      const student = await prisma.student.findUnique({
-        where: { id },
-        include: {
-          user: true,
-        },
-      });
+      const student = await prisma.student.findFirst({
+  where: {
+    id,
+    teacherGroup: req.user.teacherGroup,
+  },
+  include: {
+    user: true,
+  },
+});
 
       if (!student) {
         return res.status(404).json({ message: "Student not found" });
@@ -1265,12 +1331,16 @@ app.delete(
     const { id } = req.params;
 
     try {
-      const student = await prisma.student.findUnique({
-        where: { id },
-        include: {
-          user: true,
-        },
-      });
+      const student = await prisma.student.findFirst({
+  where: {
+    id,
+    teacherGroup: req.user.teacherGroup,
+  },
+});
+
+if (!student) {
+  return res.status(404).json({ message: "Student not found" });
+}
 
       if (!student) {
         return res.status(404).json({ message: "Student not found" });

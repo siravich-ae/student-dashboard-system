@@ -7,12 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  TEACHER
-  STUDENT
-}
-
 model User {
   id           String   @id @default(cuid())
   studentCode  String?  @unique
@@ -20,35 +14,36 @@ model User {
   passwordHash String
   role         Role     @default(STUDENT)
   studentId    String?  @unique
-  student      Student? @relation(fields: [studentId], references: [id])
+  teacherGroup String?
   createdAt    DateTime @default(now())
+  student      Student? @relation(fields: [studentId], references: [id])
 }
 
 model Student {
-  id          String    @id @default(cuid())
-  studentCode String    @unique
-  firstName   String
-  lastName    String
-  nickname    String?
-  gradeLevel  String?
-  classRoom   String?
-  schoolName  String?
-  birthDate   DateTime?
-  strengths   String?
-  photoUrl    String?
-  address     String?
-  updatedAt   DateTime  @updatedAt
-  extraNote   String?
-  themeColor  String?
-
-  user          User?
-  choices       UniversityChoice[]
-  overviewItems OverviewItem[]
+  id            String             @id @default(cuid())
+  studentCode   String             @unique
+  firstName     String
+  lastName      String
+  nickname      String?
+  gradeLevel    String?
+  classRoom     String?
+  schoolName    String?
+  birthDate     DateTime?
+  strengths     String?
+  photoUrl      String?
+  address       String?
+  updatedAt     DateTime           @updatedAt
+  extraNote     String?
+  themeColor    String?
+  parentPhone   String?
+  phone         String?
+  photoPublicId String?
+  teacherGroup  String?
   achievements  Achievement[]
   gradeRecords  GradeRecord[]
-  phone         String?
-  parentPhone   String?
-  photoPublicId   String?
+  overviewItems OverviewItem[]
+  choices       UniversityChoice[]
+  user          User?
 }
 
 model UniversityChoice {
@@ -58,8 +53,7 @@ model UniversityChoice {
   universityName String
   facultyName    String?
   programName    String?
-
-  student Student @relation(fields: [studentId], references: [id])
+  student        Student @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, rank])
 }
@@ -68,15 +62,14 @@ model OverviewItem {
   id              String   @id @default(cuid())
   studentId       String
   choiceRank      Int
-  requirementType String? // เช่น TCAS1
-  requirementText String // ข้อเรียกร้อง
+  requirementType String?
+  requirementText String
   hasIt           Boolean  @default(false)
   note            String?
   sortOrder       Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId, choiceRank])
 }
@@ -84,17 +77,16 @@ model OverviewItem {
 model Achievement {
   id          String   @id @default(cuid())
   studentId   String
-  category    String // เช่น วิชาการ, กีฬา, ศิลปะ, อื่น ๆ
-  title       String // ชื่อรายการผลงาน
-  description String? // รายละเอียดเพิ่มเติม
+  category    String
+  title       String
+  description String?
   hasEvidence Boolean  @default(false)
-  evidenceUrl String? // ลิงก์ drive / รูป / เอกสาร
+  evidenceUrl String?
   note        String?
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId, category])
 }
@@ -110,8 +102,13 @@ model GradeRecord {
   sortOrder    Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId, academicYear, term])
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+  ADMIN
 }
