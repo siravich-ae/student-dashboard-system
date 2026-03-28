@@ -587,6 +587,10 @@ app.post(
     const { id } = req.params;
 
     try {
+      console.log("req.file =", req.file);
+      console.log("cloud name =", process.env.CLOUDINARY_CLOUD_NAME);
+      console.log("api key exists =", !!process.env.CLOUDINARY_API_KEY);
+      console.log("api secret exists =", !!process.env.CLOUDINARY_API_SECRET);
       const existing = await prisma.student.findUnique({
         where: { id },
       });
