@@ -1013,6 +1013,80 @@ setTcasForm(base);
     </div>
   </div>
 )}
+{isTeacherPasswordOpen && (
+  <div style={styles.modalOverlay} onMouseDown={closeTeacherPasswordModal}>
+    <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+      <div style={styles.modalHeader}>
+        <div style={{ fontWeight: 900, fontSize: 16 }}>เปลี่ยนรหัสผ่านครู</div>
+        <button
+          style={styles.modalClose}
+          onClick={closeTeacherPasswordModal}
+          disabled={teacherPasswordLoading}
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleTeacherChangePassword}>
+        <label style={styles.label}>รหัสผ่านปัจจุบัน</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.currentPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("currentPassword", e.target.value)
+          }
+          placeholder="กรอกรหัสผ่านปัจจุบัน"
+        />
+
+        <label style={styles.label}>รหัสผ่านใหม่</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.newPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("newPassword", e.target.value)
+          }
+          placeholder="อย่างน้อย 4 ตัวอักษร"
+        />
+
+        <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.confirmPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("confirmPassword", e.target.value)
+          }
+          placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+        />
+
+        {teacherPasswordError && (
+          <div style={styles.error}>{teacherPasswordError}</div>
+        )}
+
+        <div style={styles.modalActions}>
+          <button
+            type="button"
+            style={styles.outlineBtn}
+            onClick={closeTeacherPasswordModal}
+            disabled={teacherPasswordLoading}
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="submit"
+            style={styles.primaryBtn}
+            disabled={teacherPasswordLoading}
+          >
+            {teacherPasswordLoading ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 
@@ -2454,80 +2528,6 @@ function GradesTab({ student, onReload }) {
           </div>
         </div>
       )}
-      {isTeacherPasswordOpen && (
-  <div style={styles.modalOverlay} onMouseDown={closeTeacherPasswordModal}>
-    <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
-      <div style={styles.modalHeader}>
-        <div style={{ fontWeight: 900, fontSize: 16 }}>เปลี่ยนรหัสผ่านครู</div>
-        <button
-          style={styles.modalClose}
-          onClick={closeTeacherPasswordModal}
-          disabled={teacherPasswordLoading}
-        >
-          ✕
-        </button>
-      </div>
-
-      <form onSubmit={handleTeacherChangePassword}>
-        <label style={styles.label}>รหัสผ่านปัจจุบัน</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.currentPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("currentPassword", e.target.value)
-          }
-          placeholder="กรอกรหัสผ่านปัจจุบัน"
-        />
-
-        <label style={styles.label}>รหัสผ่านใหม่</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.newPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("newPassword", e.target.value)
-          }
-          placeholder="อย่างน้อย 4 ตัวอักษร"
-        />
-
-        <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.confirmPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("confirmPassword", e.target.value)
-          }
-          placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-        />
-
-        {teacherPasswordError && (
-          <div style={styles.error}>{teacherPasswordError}</div>
-        )}
-
-        <div style={styles.modalActions}>
-          <button
-            type="button"
-            style={styles.outlineBtn}
-            onClick={closeTeacherPasswordModal}
-            disabled={teacherPasswordLoading}
-          >
-            ยกเลิก
-          </button>
-
-          <button
-            type="submit"
-            style={styles.primaryBtn}
-            disabled={teacherPasswordLoading}
-          >
-            {teacherPasswordLoading ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
     </div>
   );
 }
