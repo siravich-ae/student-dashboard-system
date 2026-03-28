@@ -127,6 +127,11 @@ export default function TeacherDashboard() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [showTeacherPassword, setShowTeacherPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   // modal: add student
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -239,6 +244,13 @@ async function handleResetPassword(e) {
   } finally {
     setResetLoading(false);
   }
+}
+
+function toggleTeacherPasswordField(key) {
+  setShowTeacherPassword((prev) => ({
+    ...prev,
+    [key]: !prev[key],
+  }));
 }
 
 async function handleDeleteStudent() {
@@ -1029,37 +1041,61 @@ setTcasForm(base);
 
       <form onSubmit={handleTeacherChangePassword}>
         <label style={styles.label}>รหัสผ่านปัจจุบัน</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.currentPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("currentPassword", e.target.value)
-          }
-          placeholder="กรอกรหัสผ่านปัจจุบัน"
-        />
+          <div style={{ position: "relative" }}>
+            <input style={{ ...styles.input, paddingRight: 44 }}
+                   type={showTeacherPassword.currentPassword ? "text" : "password"}
+                   value={teacherPasswordForm.currentPassword}
+                   onChange={(e) =>
+      setTeacherPasswordField("currentPassword", e.target.value)
+    }
+    placeholder="กรอกรหัสผ่านปัจจุบัน"
+  />
+  <button
+    type="button"
+    onClick={() => toggleTeacherPasswordField("currentPassword")}
+    style={styles.eyeBtn}
+  >
+    {showTeacherPassword.currentPassword ? "🙈" : "👁"}
+  </button>
+</div>
 
         <label style={styles.label}>รหัสผ่านใหม่</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.newPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("newPassword", e.target.value)
-          }
-          placeholder="อย่างน้อย 4 ตัวอักษร"
-        />
+          <div style={{ position: "relative" }}>
+            <input style={{ ...styles.input, paddingRight: 44 }}
+                   type={showTeacherPassword.newPassword ? "text" : "password"}
+                   value={teacherPasswordForm.newPassword}
+                   onChange={(e) =>
+      setTeacherPasswordField("newPassword", e.target.value)
+    }
+    placeholder="อย่างน้อย 4 ตัวอักษร"
+  />
+  <button
+    type="button"
+    onClick={() => toggleTeacherPasswordField("newPassword")}
+    style={styles.eyeBtn}
+  >
+    {showTeacherPassword.newPassword ? "🙈" : "👁"}
+  </button>
+</div>
 
         <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
-        <input
-          style={styles.input}
-          type="password"
-          value={teacherPasswordForm.confirmPassword}
-          onChange={(e) =>
-            setTeacherPasswordField("confirmPassword", e.target.value)
-          }
-          placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-        />
+          <div style={{ position: "relative" }}>
+            <input style={{ ...styles.input, paddingRight: 44 }}
+                   type={showTeacherPassword.confirmPassword ? "text" : "password"}
+                   value={teacherPasswordForm.confirmPassword}
+                   onChange={(e) =>
+      setTeacherPasswordField("confirmPassword", e.target.value)
+    }
+    placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+  />
+  <button
+    type="button"
+    onClick={() => toggleTeacherPasswordField("confirmPassword")}
+    style={styles.eyeBtn}
+  >
+    {showTeacherPassword.confirmPassword ? "🙈" : "👁"}
+  </button>
+</div>
 
         {teacherPasswordError && (
           <div style={styles.error}>{teacherPasswordError}</div>
@@ -2862,5 +2898,17 @@ deleteBtn: {
   padding: "10px 14px",
   fontWeight: 700,
   cursor: "pointer",
+},
+
+eyeBtn: {
+  position: "absolute",
+  right: 10,
+  top: "50%",
+  transform: "translateY(-50%)",
+  border: "none",
+  background: "transparent",
+  cursor: "pointer",
+  fontSize: 16,
+  padding: 0,
 },
 };
