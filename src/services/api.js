@@ -264,3 +264,10 @@ export async function deleteMyOverviewItem(itemId) {
     method: "DELETE",
   });
 }
+
+export async function changeMyTeacherPassword(payload) {
+  return request("/me/teacher/change-password", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}

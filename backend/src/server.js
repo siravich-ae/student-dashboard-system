@@ -1551,4 +1551,58 @@ app.delete(
   }
 );
 
+// ครูเปลี่ยนรหัส
+app.put(
+  "/me/teacher/change-password",
+  requireAuth,
+  requireRole("TEACHER"),
+  async (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+    const { userId } = req.user;
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ message: "กรอกข้อมูลให้ครบ" });
+    }
+
+    if (newPassword.trim().length < 4) {
+      return res.status(400).json({
+        message: "รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: "ยืนยันรหัสผ่านใหม่ไม่ตรงกัน" });
+    }
+
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user || user.role !== "TEACHER") {
+        return res.status(404).json({ message: "Teacher not found" });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+
+      if (!isMatch) {
+        return res.status(400).json({ message: "รหัสผ่านปัจจุบันไม่ถูกต้อง" });
+      }
+
+      const passwordHash = await bcrypt.hash(newPassword.trim(), 10);
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+        },
+      });
+
+      res.json({ message: "เปลี่ยนรหัสผ่านสำเร็จ" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));

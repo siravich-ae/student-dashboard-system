@@ -19,6 +19,7 @@ import {
   updateStudentExtraNote,
   resetStudentPassword,
   deleteStudent,
+  changeMyTeacherPassword,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { getFileUrl } from "../services/api";
@@ -118,6 +119,14 @@ export default function TeacherDashboard() {
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
   const [resetPassword, setResetPassword] = useState("");
+  const [isTeacherPasswordOpen, setIsTeacherPasswordOpen] = useState(false);
+  const [teacherPasswordLoading, setTeacherPasswordLoading] = useState(false);
+  const [teacherPasswordError, setTeacherPasswordError] = useState("");
+  const [teacherPasswordForm, setTeacherPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   // modal: add student
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -252,6 +261,65 @@ async function handleDeleteStudent() {
     await loadStudents();
   } catch (err) {
     alert(err.message || "Delete failed");
+  }
+}
+function openTeacherPasswordModal() {
+  setTeacherPasswordError("");
+  setTeacherPasswordForm({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  setIsTeacherPasswordOpen(true);
+}
+
+function closeTeacherPasswordModal() {
+  if (teacherPasswordLoading) return;
+  setIsTeacherPasswordOpen(false);
+}
+
+function setTeacherPasswordField(key, value) {
+  setTeacherPasswordForm((prev) => ({ ...prev, [key]: value }));
+}
+
+async function handleTeacherChangePassword(e) {
+  e.preventDefault();
+  setTeacherPasswordError("");
+
+  if (
+    !teacherPasswordForm.currentPassword.trim() ||
+    !teacherPasswordForm.newPassword.trim() ||
+    !teacherPasswordForm.confirmPassword.trim()
+  ) {
+    setTeacherPasswordError("กรอกข้อมูลให้ครบ");
+    return;
+  }
+
+  if (teacherPasswordForm.newPassword.trim().length < 4) {
+    setTeacherPasswordError("รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร");
+    return;
+  }
+
+  if (teacherPasswordForm.newPassword !== teacherPasswordForm.confirmPassword) {
+    setTeacherPasswordError("ยืนยันรหัสผ่านใหม่ไม่ตรงกัน");
+    return;
+  }
+
+  try {
+    setTeacherPasswordLoading(true);
+
+    await changeMyTeacherPassword({
+      currentPassword: teacherPasswordForm.currentPassword,
+      newPassword: teacherPasswordForm.newPassword,
+      confirmPassword: teacherPasswordForm.confirmPassword,
+    });
+
+    setIsTeacherPasswordOpen(false);
+    alert("เปลี่ยนรหัสผ่านสำเร็จ");
+  } catch (err) {
+    setTeacherPasswordError(err.message || "Change password failed");
+  } finally {
+    setTeacherPasswordLoading(false);
   }
 }
 
@@ -462,17 +530,27 @@ setTcasForm(base);
   }}
 >
         <div style={styles.sideTop}>
-          <div style={{ fontWeight: 800 }}>รายชื่อนักเรียน</div>
-          <button
-            style={styles.logout}
-            onClick={() => {
-              clearToken();
-              navigate("/", { replace: true });
-            }}
-          >
-            ออกจากระบบ
-          </button>
-        </div>
+  <div style={{ fontWeight: 800 }}>รายชื่อนักเรียน</div>
+
+  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+    <button
+      style={styles.outlineBtn}
+      onClick={openTeacherPasswordModal}
+    >
+      เปลี่ยนรหัสผ่าน
+    </button>
+
+    <button
+      style={styles.logout}
+      onClick={() => {
+        clearToken();
+        navigate("/", { replace: true });
+      }}
+    >
+      ออกจากระบบ
+    </button>
+  </div>
+</div>
 
         <input
           style={styles.search}
@@ -2376,6 +2454,80 @@ function GradesTab({ student, onReload }) {
           </div>
         </div>
       )}
+      {isTeacherPasswordOpen && (
+  <div style={styles.modalOverlay} onMouseDown={closeTeacherPasswordModal}>
+    <div style={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+      <div style={styles.modalHeader}>
+        <div style={{ fontWeight: 900, fontSize: 16 }}>เปลี่ยนรหัสผ่านครู</div>
+        <button
+          style={styles.modalClose}
+          onClick={closeTeacherPasswordModal}
+          disabled={teacherPasswordLoading}
+        >
+          ✕
+        </button>
+      </div>
+
+      <form onSubmit={handleTeacherChangePassword}>
+        <label style={styles.label}>รหัสผ่านปัจจุบัน</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.currentPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("currentPassword", e.target.value)
+          }
+          placeholder="กรอกรหัสผ่านปัจจุบัน"
+        />
+
+        <label style={styles.label}>รหัสผ่านใหม่</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.newPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("newPassword", e.target.value)
+          }
+          placeholder="อย่างน้อย 4 ตัวอักษร"
+        />
+
+        <label style={styles.label}>ยืนยันรหัสผ่านใหม่</label>
+        <input
+          style={styles.input}
+          type="password"
+          value={teacherPasswordForm.confirmPassword}
+          onChange={(e) =>
+            setTeacherPasswordField("confirmPassword", e.target.value)
+          }
+          placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
+        />
+
+        {teacherPasswordError && (
+          <div style={styles.error}>{teacherPasswordError}</div>
+        )}
+
+        <div style={styles.modalActions}>
+          <button
+            type="button"
+            style={styles.outlineBtn}
+            onClick={closeTeacherPasswordModal}
+            disabled={teacherPasswordLoading}
+          >
+            ยกเลิก
+          </button>
+
+          <button
+            type="submit"
+            style={styles.primaryBtn}
+            disabled={teacherPasswordLoading}
+          >
+            {teacherPasswordLoading ? "กำลังบันทึก..." : "บันทึกรหัสผ่านใหม่"}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
 }
