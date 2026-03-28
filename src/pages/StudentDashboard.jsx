@@ -5,6 +5,9 @@ import {
   updateMyStudentProfile,
   updateMyStudentChoices,
   changeMyStudentPassword,
+  updateMyAchievement,
+  createMyAchievement,
+  deleteMyAchievement,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -628,6 +631,15 @@ function StudentAchievementTab({ student, onReload }) {
     evidenceUrl: "",
     note: "",
   });
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({
+  category: "วิชาการ",
+  title: "",
+  description: "",
+  hasEvidence: false,
+  evidenceUrl: "",
+  note: "",
+});
 
   if (!student) return null;
 
@@ -635,8 +647,8 @@ function StudentAchievementTab({ student, onReload }) {
   const categories = ["วิชาการ", "กีฬา", "ศิลปะ", "จิตอาสา", "อื่น ๆ"];
 
   function setField(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
+  setForm((prev) => ({ ...prev, [key]: value }));
+}
 
   async function handleAdd() {
     setError("");
@@ -775,43 +787,196 @@ function StudentAchievementTab({ student, onReload }) {
           </thead>
           <tbody>
             {achievements.length === 0 ? (
-              <tr>
-                <td colSpan="5" style={styles.gradeEmpty}>ยังไม่มีผลงาน</td>
-              </tr>
-            ) : (
-              achievements.map((item) => (
-                <tr key={item.id}>
-                  <td style={styles.gradeTd}>{item.category}</td>
-                  <td style={styles.gradeTd}>
-                    <div style={{ fontWeight: 700 }}>{item.title}</div>
-                    {item.description && (
-                      <div style={{ marginTop: 4, color: "#666", fontSize: 13 }}>
-                        {item.description}
-                      </div>
-                    )}
-                  </td>
-                  <td style={styles.gradeTd}>
-                    {item.evidenceUrl ? (
-                      <a href={item.evidenceUrl} target="_blank" rel="noreferrer">
-                        เปิดลิงก์
-                      </a>
-                    ) : item.hasEvidence ? "มีแล้ว" : "-"
-                    }
-                  </td>
-                  <td style={styles.gradeTd}>{item.note || "-"}</td>
-                  <td style={styles.gradeTd}>
-                    <button style={styles.deleteBtn} onClick={() => handleDelete(item.id)}>
-                      ลบ
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
+  <tr>
+    <td colSpan="5" style={styles.gradeEmpty}>
+      ยังไม่มีผลงาน
+    </td>
+  </tr>
+) : (
+  achievements.map((item) =>
+    editingId === item.id ? (
+      <tr key={item.id}>
+        <td style={styles.gradeTd}>
+          <select
+            style={styles.input}
+            value={editForm.category}
+            onChange={(e) => setEditField("category", e.target.value)}
+          >
+            {categories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </td>
+
+        <td style={styles.gradeTd}>
+          <input
+            style={styles.input}
+            value={editForm.title}
+            onChange={(e) => setEditField("title", e.target.value)}
+            placeholder="ชื่อผลงาน"
+          />
+          <textarea
+            style={{ ...styles.input, marginTop: 8, minHeight: 70 }}
+            value={editForm.description}
+            onChange={(e) => setEditField("description", e.target.value)}
+            placeholder="รายละเอียดเพิ่มเติม"
+          />
+        </td>
+
+        <td style={styles.gradeTd}>
+          <label style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={editForm.hasEvidence}
+              onChange={(e) => setEditField("hasEvidence", e.target.checked)}
+            />
+            มีหลักฐาน
+          </label>
+
+          <input
+            style={{ ...styles.input, marginTop: 8 }}
+            value={editForm.evidenceUrl}
+            onChange={(e) => setEditField("evidenceUrl", e.target.value)}
+            placeholder="ลิงก์หลักฐาน"
+          />
+        </td>
+
+        <td style={styles.gradeTd}>
+          <input
+            style={styles.input}
+            value={editForm.note}
+            onChange={(e) => setEditField("note", e.target.value)}
+            placeholder="หมายเหตุ"
+          />
+        </td>
+
+        <td style={styles.gradeTd}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              style={styles.primaryBtn}
+              onClick={() => handleEditSave(item.id)}
+              disabled={saving}
+            >
+              {saving ? "..." : "บันทึก"}
+            </button>
+
+            <button
+              style={styles.outlineBtn}
+              onClick={cancelEdit}
+              disabled={saving}
+            >
+              ยกเลิก
+            </button>
+          </div>
+        </td>
+      </tr>
+    ) : (
+      <tr key={item.id}>
+        <td style={styles.gradeTd}>{item.category}</td>
+
+        <td style={styles.gradeTd}>
+          <div style={{ fontWeight: 700 }}>{item.title}</div>
+          {item.description && (
+            <div style={{ marginTop: 4, color: "#666", fontSize: 13 }}>
+              {item.description}
+            </div>
+          )}
+        </td>
+
+        <td style={styles.gradeTd}>
+          {item.evidenceUrl ? (
+            <a href={item.evidenceUrl} target="_blank" rel="noreferrer">
+              เปิดลิงก์
+            </a>
+          ) : item.hasEvidence ? "มีแล้ว" : "-"}
+        </td>
+
+        <td style={styles.gradeTd}>{item.note || "-"}</td>
+
+        <td style={styles.gradeTd}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              style={styles.outlineBtn}
+              onClick={() => startEdit(item)}
+            >
+              แก้ไข
+            </button>
+
+            <button
+              style={styles.deleteBtn}
+              onClick={() => handleDelete(item.id)}
+            >
+              ลบ
+            </button>
+          </div>
+        </td>
+      </tr>
+    )
+  )
+)}
           </tbody>
         </table>
       </div>
     </div>
   );
+
+  function startEdit(item) {
+  setError("");
+  setEditingId(item.id);
+  setEditForm({
+    category: item.category || "วิชาการ",
+    title: item.title || "",
+    description: item.description || "",
+    hasEvidence: Boolean(item.hasEvidence),
+    evidenceUrl: item.evidenceUrl || "",
+    note: item.note || "",
+  });
+}
+
+function cancelEdit() {
+  if (saving) return;
+  setEditingId("");
+  setEditForm({
+    category: "วิชาการ",
+    title: "",
+    description: "",
+    hasEvidence: false,
+    evidenceUrl: "",
+    note: "",
+  });
+}
+
+function setEditField(key, value) {
+  setEditForm((prev) => ({ ...prev, [key]: value }));
+}
+
+async function handleEditSave(id) {
+  setError("");
+
+  if (!editForm.title.trim()) {
+    setError("กรอกชื่อผลงานก่อน");
+    return;
+  }
+
+  try {
+    setSaving(true);
+    await updateMyAchievement(id, {
+      category: editForm.category,
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      hasEvidence: editForm.hasEvidence,
+      evidenceUrl: editForm.evidenceUrl.trim(),
+      note: editForm.note.trim(),
+    });
+
+    setEditingId("");
+    await onReload();
+  } catch (err) {
+    setError(err.message || "Update failed");
+  } finally {
+    setSaving(false);
+  }
+}
 }
 
 function StudentGradesTab({ student, gpa }) {

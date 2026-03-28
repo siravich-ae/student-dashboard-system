@@ -1274,4 +1274,53 @@ app.delete(
   }
 );
 
+app.put(
+  "/me/student/overview-items/:itemId",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { itemId } = req.params;
+    const {
+      choiceRank,
+      requirementType,
+      requirementText,
+      hasIt,
+      note,
+      sortOrder,
+    } = req.body || {};
+
+    try {
+      const existing = await prisma.overviewItem.findUnique({
+        where: { id: itemId },
+      });
+
+      if (!existing || existing.studentId !== studentId) {
+        return res.status(404).json({ message: "Overview item not found" });
+      }
+
+      const item = await prisma.overviewItem.update({
+        where: { id: itemId },
+        data: {
+          choiceRank:
+            choiceRank !== undefined ? Number(choiceRank) : existing.choiceRank,
+          requirementType:
+            requirementType !== undefined ? requirementType?.trim() || null : existing.requirementType,
+          requirementText:
+            requirementText !== undefined ? requirementText.trim() : existing.requirementText,
+          hasIt: hasIt !== undefined ? Boolean(hasIt) : existing.hasIt,
+          note: note !== undefined ? note?.trim() || null : existing.note,
+          sortOrder:
+            sortOrder !== undefined ? Number(sortOrder) : existing.sortOrder,
+        },
+      });
+
+      res.json({ message: "Overview item updated", item });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));
