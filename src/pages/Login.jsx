@@ -8,6 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -47,13 +48,32 @@ export default function Login() {
           />
 
           <label style={styles.label}>Password</label>
-          <input
-            style={styles.input}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="รหัสผ่าน"
-          />
+          <div style={{ position: "relative" }}>
+  <input
+    style={{ ...styles.input, paddingRight: 40 }}
+    type={showPassword ? "text" : "password"}
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    placeholder="รหัสผ่าน"
+  />
+
+  <button
+    type="button"
+    onClick={() => setShowPassword((prev) => !prev)}
+    style={{
+      position: "absolute",
+      right: 10,
+      top: "50%",
+      transform: "translateY(-50%)",
+      border: "none",
+      background: "transparent",
+      cursor: "pointer",
+      fontSize: 16,
+    }}
+  >
+    {showPassword ? "🙈" : "👁"}
+  </button>
+</div>
 
           {error && <div style={styles.error}>{error}</div>}
 
