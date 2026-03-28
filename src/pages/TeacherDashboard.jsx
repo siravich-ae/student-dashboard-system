@@ -1274,7 +1274,7 @@ async function handleSaveEdit(itemId) {
   );
 }
 
-function AchievementRow({ item, category, saving, onToggle, onDelete }) {
+function AchievementRow({ item, category, saving, onToggle, onDelete, onEdit }) {
   return (
     <tr>
       <td style={styles.overviewTd}>{category}</td>
@@ -1314,14 +1314,24 @@ function AchievementRow({ item, category, saving, onToggle, onDelete }) {
         )}
       </td>
       <td style={styles.overviewTdCenter}>
-        <button
-          style={styles.deleteBtn}
-          onClick={() => onDelete(item.id)}
-          disabled={saving}
-        >
-          ลบ
-        </button>
-      </td>
+  <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+    <button
+      style={styles.outlineBtn}
+      onClick={() => onEdit(item)}
+      disabled={saving}
+    >
+      แก้ไข
+    </button>
+
+    <button
+      style={styles.deleteBtn}
+      onClick={() => onDelete(item.id)}
+      disabled={saving}
+    >
+      ลบ
+    </button>
+  </div>
+</td>
     </tr>
   );
 }
