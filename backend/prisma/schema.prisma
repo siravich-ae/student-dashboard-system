@@ -48,6 +48,7 @@ model Student {
   gradeRecords  GradeRecord[]
   phone         String?
   parentPhone   String?
+  photoPublicId   String?
 }
 
 model UniversityChoice {

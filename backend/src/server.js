@@ -591,6 +591,7 @@ app.post(
       console.log("cloud name =", process.env.CLOUDINARY_CLOUD_NAME);
       console.log("api key exists =", !!process.env.CLOUDINARY_API_KEY);
       console.log("api secret exists =", !!process.env.CLOUDINARY_API_SECRET);
+
       const existing = await prisma.student.findUnique({
         where: { id },
       });
@@ -603,16 +604,32 @@ app.post(
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      // 🔥 อัปโหลดไป Cloudinary
+      // 🔥 ถ้ามีรูปเก่าใน Cloudinary ให้ลบก่อน
+      if (existing.photoPublicId) {
+        await cloudinary.uploader.destroy(existing.photoPublicId);
+      }
+
+      // 🔥 อัปโหลดรูปใหม่ไป Cloudinary
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "student-dashboard",
       });
-      fs.unlinkSync(req.file.path);
+
+      // 🔥 ลบไฟล์ temp ใน server
+      if (req.file?.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch {}
+      }
+
       const photoUrl = result.secure_url;
+      const photoPublicId = result.public_id;
 
       const student = await prisma.student.update({
         where: { id },
-        data: { photoUrl },
+        data: {
+          photoUrl,
+          photoPublicId,
+        },
         include: {
           choices: { orderBy: { rank: "asc" } },
           overviewItems: {
@@ -628,6 +645,13 @@ app.post(
       res.json({ message: "Photo uploaded", student });
     } catch (e) {
       console.error(e);
+
+      if (req.file?.path) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch {}
+      }
+
       res.status(500).json({ message: "Server error" });
     }
   }
