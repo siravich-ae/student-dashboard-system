@@ -970,6 +970,67 @@ function AchievementCategorySection({ category, studentId, items, onReload }) {
     evidenceUrl: "",
     note: "",
   });
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({
+  title: "",
+  description: "",
+  hasEvidence: false,
+  evidenceUrl: "",
+  note: "",
+});
+
+  function startEdit(item) {
+  setError("");
+  setEditingId(item.id);
+  setEditForm({
+    title: item.title || "",
+    description: item.description || "",
+    hasEvidence: Boolean(item.hasEvidence),
+    evidenceUrl: item.evidenceUrl || "",
+    note: item.note || "",
+  });
+}
+
+function cancelEdit() {
+  if (savingId) return;
+  setEditingId("");
+  setEditForm({
+    title: "",
+    description: "",
+    hasEvidence: false,
+    evidenceUrl: "",
+    note: "",
+  });
+}
+
+function setEditField(key, value) {
+  setEditForm((prev) => ({ ...prev, [key]: value }));
+}
+
+async function handleSaveEdit(itemId) {
+  if (!editForm.title.trim()) {
+    setError("กรอกชื่อรายการก่อน");
+    return;
+  }
+
+  try {
+    setSavingId(itemId);
+    await updateAchievement(itemId, {
+      category,
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      hasEvidence: editForm.hasEvidence,
+      evidenceUrl: editForm.evidenceUrl.trim(),
+      note: editForm.note.trim(),
+    });
+    setEditingId("");
+    await onReload();
+  } catch (err) {
+    setError(err.message || "Update failed");
+  } finally {
+    setSavingId("");
+  }
+}
 
   function setNewField(key, value) {
     setNewItem((prev) => ({ ...prev, [key]: value }));
@@ -1080,16 +1141,80 @@ function AchievementCategorySection({ category, studentId, items, onReload }) {
               </tr>
             )}
 
-            {items.map((item) => (
-              <AchievementRow
-                key={item.id}
-                item={item}
-                category={category}
-                saving={savingId === item.id}
-                onToggle={handleToggle}
-                onDelete={handleDelete}
-              />
-            ))}
+            {items.map((item) =>
+  editingId === item.id ? (
+    <tr key={item.id}>
+      <td style={styles.overviewTd}>{category}</td>
+
+      <td style={styles.overviewTd}>
+        <input
+          style={styles.tableInput}
+          value={editForm.title}
+          onChange={(e) => setEditField("title", e.target.value)}
+          placeholder="ชื่อผลงาน"
+        />
+        <input
+          style={{ ...styles.tableInput, marginTop: 8 }}
+          value={editForm.description}
+          onChange={(e) => setEditField("description", e.target.value)}
+          placeholder="รายละเอียดเพิ่มเติม"
+        />
+      </td>
+
+      <td style={styles.overviewTdCenter}>
+        <input
+          type="checkbox"
+          checked={editForm.hasEvidence}
+          onChange={(e) => setEditField("hasEvidence", e.target.checked)}
+        />
+      </td>
+
+      <td style={styles.overviewTd}>
+        <input
+          style={styles.tableInput}
+          value={editForm.evidenceUrl}
+          onChange={(e) => setEditField("evidenceUrl", e.target.value)}
+          placeholder="ลิงก์หลักฐาน"
+        />
+        <input
+          style={{ ...styles.tableInput, marginTop: 8 }}
+          value={editForm.note}
+          onChange={(e) => setEditField("note", e.target.value)}
+          placeholder="หมายเหตุ"
+        />
+      </td>
+
+      <td style={styles.overviewTdCenter}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <button
+            style={styles.primaryBtn}
+            onClick={() => handleSaveEdit(item.id)}
+            disabled={savingId === item.id}
+          >
+            {savingId === item.id ? "..." : "บันทึก"}
+          </button>
+          <button
+            style={styles.outlineBtn}
+            onClick={cancelEdit}
+            disabled={savingId === item.id}
+          >
+            ยกเลิก
+          </button>
+        </div>
+      </td>
+    </tr>
+  ) : (
+    <AchievementRow
+      key={item.id}
+      item={item}
+      category={category}
+      saving={savingId === item.id}
+      onToggle={handleToggle}
+      onDelete={handleDelete}
+      onEdit={startEdit}
+    />
+  )
+)}
 
             {adding && (
               <tr>
@@ -1505,6 +1630,62 @@ function OverviewSection({ rank, studentId, items, onReload }) {
   });
   const [savingId, setSavingId] = useState("");
   const [error, setError] = useState("");
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({
+  requirementType: "",
+  requirementText: "",
+  hasIt: false,
+  note: "",
+});
+
+  function startEdit(item) {
+  setError("");
+  setEditingId(item.id);
+  setEditForm({
+    requirementType: item.requirementType || "",
+    requirementText: item.requirementText || "",
+    hasIt: Boolean(item.hasIt),
+    note: item.note || "",
+  });
+}
+
+function cancelEdit() {
+  if (savingId) return;
+  setEditingId("");
+  setEditForm({
+    requirementType: "",
+    requirementText: "",
+    hasIt: false,
+    note: "",
+  });
+}
+
+function setEditField(key, value) {
+  setEditForm((prev) => ({ ...prev, [key]: value }));
+}
+
+async function handleSaveEdit(itemId) {
+  if (!editForm.requirementText.trim()) {
+    setError("กรอกข้อเรียกร้องก่อน");
+    return;
+  }
+
+  try {
+    setSavingId(itemId);
+    await updateOverviewItem(itemId, {
+      requirementType: editForm.requirementType.trim(),
+      requirementText: editForm.requirementText.trim(),
+      hasIt: editForm.hasIt,
+      note: editForm.note.trim(),
+    });
+    setEditingId("");
+    await onReload();
+  } catch (err) {
+    setError(err.message || "Update failed");
+  } finally {
+    setSavingId("");
+  }
+}
 
   function setNewField(key, value) {
     setNewItem((prev) => ({ ...prev, [key]: value }));
