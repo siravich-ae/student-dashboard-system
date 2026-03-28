@@ -1953,6 +1953,7 @@ function OverviewRow({ item, saving, onToggle, onDelete, onNoteBlur, onEdit }) {
     <tr>
       <td style={styles.overviewTd}>{item.requirementType || "-"}</td>
       <td style={styles.overviewTd}>{item.requirementText}</td>
+
       <td style={styles.overviewTdCenter}>
         <button
           style={styles.checkBtn}
@@ -1963,6 +1964,7 @@ function OverviewRow({ item, saving, onToggle, onDelete, onNoteBlur, onEdit }) {
           {item.hasIt ? "✔" : "○"}
         </button>
       </td>
+
       <td style={styles.overviewTd}>
         <input
           style={styles.tableInput}
@@ -1972,14 +1974,25 @@ function OverviewRow({ item, saving, onToggle, onDelete, onNoteBlur, onEdit }) {
           placeholder="หมายเหตุ"
         />
       </td>
+
       <td style={styles.overviewTdCenter}>
-        <button
-          style={styles.deleteBtn}
-          onClick={() => onDelete(item.id)}
-          disabled={saving}
-        >
-          ลบ
-        </button>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <button
+            style={styles.outlineBtn}
+            onClick={() => onEdit(item)}
+            disabled={saving}
+          >
+            แก้ไข
+          </button>
+
+          <button
+            style={styles.deleteBtn}
+            onClick={() => onDelete(item.id)}
+            disabled={saving}
+          >
+            ลบ
+          </button>
+        </div>
       </td>
     </tr>
   );
