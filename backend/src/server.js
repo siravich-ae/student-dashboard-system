@@ -1323,4 +1323,232 @@ app.put(
   }
 );
 
+// ✅ นักเรียนเพิ่มรายการในแท็บภาพรวมของตัวเอง
+app.post(
+  "/me/student/overview-items",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const {
+      choiceRank,
+      requirementType,
+      requirementText,
+      hasIt,
+      note,
+      sortOrder,
+    } = req.body || {};
+
+    if (!studentId) {
+      return res.status(400).json({ message: "Student profile not linked" });
+    }
+
+    if (![1, 2, 3].includes(Number(choiceRank))) {
+      return res.status(400).json({ message: "choiceRank must be 1, 2, or 3" });
+    }
+
+    if (!requirementText || !requirementText.trim()) {
+      return res.status(400).json({ message: "requirementText is required" });
+    }
+
+    try {
+      const item = await prisma.overviewItem.create({
+        data: {
+          studentId,
+          choiceRank: Number(choiceRank),
+          requirementType: requirementType?.trim() || null,
+          requirementText: requirementText.trim(),
+          hasIt: Boolean(hasIt),
+          note: note?.trim() || null,
+          sortOrder: Number(sortOrder || 0),
+        },
+      });
+
+      res.json({ message: "Overview item created", item });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ✅ นักเรียนแก้รายการในแท็บภาพรวมของตัวเอง
+app.put(
+  "/me/student/overview-items/:itemId",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { itemId } = req.params;
+    const {
+      choiceRank,
+      requirementType,
+      requirementText,
+      hasIt,
+      note,
+      sortOrder,
+    } = req.body || {};
+
+    if (!studentId) {
+      return res.status(400).json({ message: "Student profile not linked" });
+    }
+
+    try {
+      const existing = await prisma.overviewItem.findUnique({
+        where: { id: itemId },
+      });
+
+      if (!existing || existing.studentId !== studentId) {
+        return res.status(404).json({ message: "Overview item not found" });
+      }
+
+      const item = await prisma.overviewItem.update({
+        where: { id: itemId },
+        data: {
+          choiceRank:
+            choiceRank !== undefined ? Number(choiceRank) : existing.choiceRank,
+          requirementType:
+            requirementType !== undefined
+              ? requirementType?.trim() || null
+              : existing.requirementType,
+          requirementText:
+            requirementText !== undefined
+              ? requirementText.trim()
+              : existing.requirementText,
+          hasIt:
+            hasIt !== undefined ? Boolean(hasIt) : existing.hasIt,
+          note:
+            note !== undefined ? note?.trim() || null : existing.note,
+          sortOrder:
+            sortOrder !== undefined ? Number(sortOrder) : existing.sortOrder,
+        },
+      });
+
+      res.json({ message: "Overview item updated", item });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ✅ นักเรียนลบรายการในแท็บภาพรวมของตัวเอง
+app.delete(
+  "/me/student/overview-items/:itemId",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { itemId } = req.params;
+
+    if (!studentId) {
+      return res.status(400).json({ message: "Student profile not linked" });
+    }
+
+    try {
+      const existing = await prisma.overviewItem.findUnique({
+        where: { id: itemId },
+      });
+
+      if (!existing || existing.studentId !== studentId) {
+        return res.status(404).json({ message: "Overview item not found" });
+      }
+
+      await prisma.overviewItem.delete({
+        where: { id: itemId },
+      });
+
+      res.json({ message: "Overview item deleted" });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ✅ นักเรียนเพิ่ม overview
+app.post(
+  "/me/student/overview-items",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { choiceRank, requirementType, requirementText, hasIt, note, sortOrder } = req.body || {};
+
+    if (!studentId) {
+      return res.status(400).json({ message: "Student profile not linked" });
+    }
+
+    try {
+      const item = await prisma.overviewItem.create({
+        data: {
+          studentId,
+          choiceRank: Number(choiceRank),
+          requirementType: requirementType?.trim() || null,
+          requirementText: requirementText?.trim(),
+          hasIt: Boolean(hasIt),
+          note: note?.trim() || null,
+          sortOrder: Number(sortOrder || 0),
+        },
+      });
+
+      res.json({ message: "created", item });
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+// ✅ นักเรียนแก้
+app.put(
+  "/me/student/overview-items/:itemId",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { itemId } = req.params;
+
+    const existing = await prisma.overviewItem.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!existing || existing.studentId !== studentId) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    const item = await prisma.overviewItem.update({
+      where: { id: itemId },
+      data: req.body,
+    });
+
+    res.json({ item });
+  }
+);
+
+// ✅ นักเรียนลบ
+app.delete(
+  "/me/student/overview-items/:itemId",
+  requireAuth,
+  requireRole("STUDENT"),
+  async (req, res) => {
+    const { studentId } = req.user;
+    const { itemId } = req.params;
+
+    const existing = await prisma.overviewItem.findUnique({
+      where: { id: itemId },
+    });
+
+    if (!existing || existing.studentId !== studentId) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    await prisma.overviewItem.delete({
+      where: { id: itemId },
+    });
+
+    res.json({ message: "deleted" });
+  }
+);
+
 app.listen(PORT, () => console.log(`API running on http://localhost:${PORT}`));

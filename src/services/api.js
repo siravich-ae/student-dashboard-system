@@ -242,3 +242,25 @@ export async function deleteStudent(studentId) {
     method: "DELETE",
   });
 }
+
+// ===== STUDENT OVERVIEW =====
+
+export async function createMyOverviewItem(payload) {
+  return request("/me/student/overview-items", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateMyOverviewItem(itemId, payload) {
+  return request(`/me/student/overview-items/${itemId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMyOverviewItem(itemId) {
+  return request(`/me/student/overview-items/${itemId}`, {
+    method: "DELETE",
+  });
+}

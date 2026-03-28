@@ -8,6 +8,9 @@ import {
   updateMyAchievement,
   createMyAchievement,
   deleteMyAchievement,
+  createMyOverviewItem,
+  updateMyOverviewItem,
+  deleteMyOverviewItem,
 } from "../services/api";
 import { useNavigate } from "react-router-dom";
 
@@ -478,7 +481,9 @@ useEffect(() => {
       </>
     )}
 
-    {activeTab === "overview" && <StudentOverviewTab student={student} />}
+    {activeTab === "overview" && (
+  <StudentOverviewTab student={student} onReload={loadMe} />
+)}
 
     {activeTab === "achievementDetail" && (
       <StudentAchievementTab student={student} onReload={loadMe} />
@@ -568,7 +573,7 @@ function InfoBox({ label, value }) {
   );
 }
 
-function StudentOverviewTab({ student }) {
+function StudentOverviewTab({ student, onReload }) {
   if (!student) return null;
 
   const items = student.overviewItems || [];
@@ -581,40 +586,334 @@ function StudentOverviewTab({ student }) {
         const rankItems = items.filter((i) => i.choiceRank === rank);
 
         return (
-          <div key={rank} style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: 800, marginBottom: 8 }}>คณะอันดับ {rank}</div>
-
-            <div style={{ overflowX: "auto" }}>
-              <table style={styles.gradeTable}>
-                <thead>
-                  <tr>
-                    <th style={styles.gradeTh}>ประเภท</th>
-                    <th style={styles.gradeTh}>ข้อเรียกร้อง</th>
-                    <th style={styles.gradeTh}>มีแล้ว</th>
-                    <th style={styles.gradeTh}>หมายเหตุ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rankItems.length === 0 ? (
-                    <tr>
-                      <td colSpan="4" style={styles.gradeEmpty}>ยังไม่มีข้อมูล</td>
-                    </tr>
-                  ) : (
-                    rankItems.map((item) => (
-                      <tr key={item.id}>
-                        <td style={styles.gradeTd}>{item.requirementType || "-"}</td>
-                        <td style={styles.gradeTd}>{item.requirementText}</td>
-                        <td style={styles.gradeTd}>{item.hasIt ? "✔" : "○"}</td>
-                        <td style={styles.gradeTd}>{item.note || "-"}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <StudentOverviewSection
+            key={rank}
+            rank={rank}
+            items={rankItems}
+            onReload={onReload}
+          />
         );
       })}
+    </div>
+  );
+}
+
+function StudentOverviewSection({ rank, items, onReload }) {
+  const [adding, setAdding] = useState(false);
+  const [savingId, setSavingId] = useState("");
+  const [error, setError] = useState("");
+
+  const [newItem, setNewItem] = useState({
+    requirementType: "",
+    requirementText: "",
+    hasIt: false,
+    note: "",
+  });
+
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({
+    requirementType: "",
+    requirementText: "",
+    hasIt: false,
+    note: "",
+  });
+
+  function setNewField(key, value) {
+    setNewItem((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function setEditField(key, value) {
+    setEditForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function startEdit(item) {
+    setError("");
+    setEditingId(item.id);
+    setEditForm({
+      requirementType: item.requirementType || "",
+      requirementText: item.requirementText || "",
+      hasIt: Boolean(item.hasIt),
+      note: item.note || "",
+    });
+  }
+
+  function cancelEdit() {
+    if (savingId) return;
+    setEditingId("");
+    setEditForm({
+      requirementType: "",
+      requirementText: "",
+      hasIt: false,
+      note: "",
+    });
+  }
+
+  async function handleAdd() {
+    setError("");
+
+    if (!newItem.requirementText.trim()) {
+      setError("กรอกข้อเรียกร้องก่อน");
+      return;
+    }
+
+    try {
+      setSavingId("new");
+      await createMyOverviewItem({
+        choiceRank: rank,
+        requirementType: newItem.requirementType.trim(),
+        requirementText: newItem.requirementText.trim(),
+        hasIt: newItem.hasIt,
+        note: newItem.note.trim(),
+        sortOrder: items.length + 1,
+      });
+
+      setNewItem({
+        requirementType: "",
+        requirementText: "",
+        hasIt: false,
+        note: "",
+      });
+      setAdding(false);
+      await onReload();
+    } catch (err) {
+      setError(err.message || "Add failed");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function handleToggle(item) {
+    try {
+      setSavingId(item.id);
+      await updateMyOverviewItem(item.id, {
+        hasIt: !item.hasIt,
+      });
+      await onReload();
+    } catch (err) {
+      setError(err.message || "Update failed");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function handleSaveEdit(itemId) {
+    if (!editForm.requirementText.trim()) {
+      setError("กรอกข้อเรียกร้องก่อน");
+      return;
+    }
+
+    try {
+      setSavingId(itemId);
+      await updateMyOverviewItem(itemId, {
+        choiceRank: rank,
+        requirementType: editForm.requirementType.trim(),
+        requirementText: editForm.requirementText.trim(),
+        hasIt: editForm.hasIt,
+        note: editForm.note.trim(),
+      });
+      setEditingId("");
+      await onReload();
+    } catch (err) {
+      setError(err.message || "Update failed");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  async function handleDelete(itemId) {
+    const ok = window.confirm("ลบรายการนี้ใช่ไหม?");
+    if (!ok) return;
+
+    try {
+      setSavingId(itemId);
+      await deleteMyOverviewItem(itemId);
+      await onReload();
+    } catch (err) {
+      setError(err.message || "Delete failed");
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ fontWeight: 800 }}>คณะอันดับ {rank}</div>
+
+        <button
+          style={styles.outlineBtn}
+          onClick={() => setAdding((prev) => !prev)}
+        >
+          {adding ? "ยกเลิก" : "+ เพิ่มรายการ"}
+        </button>
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={styles.gradeTable}>
+          <thead>
+            <tr>
+              <th style={styles.gradeTh}>ประเภท</th>
+              <th style={styles.gradeTh}>ข้อเรียกร้อง</th>
+              <th style={styles.gradeTh}>มีแล้ว</th>
+              <th style={styles.gradeTh}>หมายเหตุ</th>
+              <th style={styles.gradeTh}>จัดการ</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {items.length === 0 && !adding ? (
+              <tr>
+                <td colSpan="5" style={styles.gradeEmpty}>ยังไม่มีข้อมูล</td>
+              </tr>
+            ) : (
+              items.map((item) =>
+                editingId === item.id ? (
+                  <tr key={item.id}>
+                    <td style={styles.gradeTd}>
+                      <input
+                        style={styles.input}
+                        value={editForm.requirementType}
+                        onChange={(e) => setEditField("requirementType", e.target.value)}
+                        placeholder="เช่น TCAS1"
+                      />
+                    </td>
+
+                    <td style={styles.gradeTd}>
+                      <input
+                        style={styles.input}
+                        value={editForm.requirementText}
+                        onChange={(e) => setEditField("requirementText", e.target.value)}
+                        placeholder="เช่น คะแนน A-Level / Portfolio"
+                      />
+                    </td>
+
+                    <td style={styles.gradeTd}>
+                      <input
+                        type="checkbox"
+                        checked={editForm.hasIt}
+                        onChange={(e) => setEditField("hasIt", e.target.checked)}
+                      />
+                    </td>
+
+                    <td style={styles.gradeTd}>
+                      <input
+                        style={styles.input}
+                        value={editForm.note}
+                        onChange={(e) => setEditField("note", e.target.value)}
+                        placeholder="หมายเหตุ"
+                      />
+                    </td>
+
+                    <td style={styles.gradeTd}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          style={styles.primaryBtn}
+                          onClick={() => handleSaveEdit(item.id)}
+                          disabled={savingId === item.id}
+                        >
+                          {savingId === item.id ? "..." : "บันทึก"}
+                        </button>
+
+                        <button
+                          style={styles.outlineBtn}
+                          onClick={cancelEdit}
+                          disabled={savingId === item.id}
+                        >
+                          ยกเลิก
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={item.id}>
+                    <td style={styles.gradeTd}>{item.requirementType || "-"}</td>
+                    <td style={styles.gradeTd}>{item.requirementText}</td>
+                    <td style={styles.gradeTd}>{item.hasIt ? "✔" : "○"}</td>
+                    <td style={styles.gradeTd}>{item.note || "-"}</td>
+                    <td style={styles.gradeTd}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          style={styles.outlineBtn}
+                          onClick={() => startEdit(item)}
+                          disabled={savingId === item.id}
+                        >
+                          แก้ไข
+                        </button>
+
+                        <button
+                          style={styles.deleteBtn}
+                          onClick={() => handleDelete(item.id)}
+                          disabled={savingId === item.id}
+                        >
+                          ลบ
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              )
+            )}
+
+            {adding && (
+              <tr>
+                <td style={styles.gradeTd}>
+                  <input
+                    style={styles.input}
+                    value={newItem.requirementType}
+                    onChange={(e) => setNewField("requirementType", e.target.value)}
+                    placeholder="เช่น TCAS1"
+                  />
+                </td>
+
+                <td style={styles.gradeTd}>
+                  <input
+                    style={styles.input}
+                    value={newItem.requirementText}
+                    onChange={(e) => setNewField("requirementText", e.target.value)}
+                    placeholder="เช่น คะแนน A-Level / Portfolio"
+                  />
+                </td>
+
+                <td style={styles.gradeTd}>
+                  <input
+                    type="checkbox"
+                    checked={newItem.hasIt}
+                    onChange={(e) => setNewField("hasIt", e.target.checked)}
+                  />
+                </td>
+
+                <td style={styles.gradeTd}>
+                  <input
+                    style={styles.input}
+                    value={newItem.note}
+                    onChange={(e) => setNewField("note", e.target.value)}
+                    placeholder="หมายเหตุ"
+                  />
+                </td>
+
+                <td style={styles.gradeTd}>
+                  <button
+                    style={styles.primaryBtn}
+                    onClick={handleAdd}
+                    disabled={savingId === "new"}
+                  >
+                    {savingId === "new" ? "..." : "บันทึก"}
+                  </button>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {error && <div style={styles.error}>{error}</div>}
     </div>
   );
 }
