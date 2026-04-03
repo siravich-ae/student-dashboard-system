@@ -698,34 +698,27 @@ app.post(
 );
 // ✅ ครูเพิ่มผลงานนักเรียน
 app.post(
-  "/students/:id/grades",
+  "/students/:id/achievements",
   requireAuth,
   requireRole("TEACHER"),
   async (req, res) => {
     const { id } = req.params;
     const {
-      academicYear,
-      term,
-      subject,
-      grade,
+      category,
+      title,
+      description,
+      hasEvidence,
+      evidenceUrl,
       note,
       sortOrder,
     } = req.body || {};
 
-    if (!academicYear || !academicYear.trim()) {
-      return res.status(400).json({ message: "academicYear is required" });
+    if (!category || !category.trim()) {
+      return res.status(400).json({ message: "category is required" });
     }
 
-    if (!term || !term.trim()) {
-      return res.status(400).json({ message: "term is required" });
-    }
-
-    if (!subject || !subject.trim()) {
-      return res.status(400).json({ message: "subject is required" });
-    }
-
-    if (!grade || !grade.trim()) {
-      return res.status(400).json({ message: "grade is required" });
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: "title is required" });
     }
 
     try {
@@ -740,19 +733,20 @@ app.post(
         return res.status(404).json({ message: "Student not found" });
       }
 
-      const gradeRecord = await prisma.gradeRecord.create({
+      const achievement = await prisma.achievement.create({
         data: {
           studentId: existing.id,
-          academicYear: academicYear.trim(),
-          term: term.trim(),
-          subject: subject.trim(),
-          grade: grade.trim(),
+          category: category.trim(),
+          title: title.trim(),
+          description: description?.trim() || null,
+          hasEvidence: Boolean(hasEvidence),
+          evidenceUrl: evidenceUrl?.trim() || null,
           note: note?.trim() || null,
           sortOrder: Number(sortOrder || 0),
         },
       });
 
-      res.json({ message: "Grade created", gradeRecord });
+      res.status(201).json({ message: "Achievement created", achievement });
     } catch (e) {
       console.error(e);
       res.status(500).json({ message: "Server error" });
